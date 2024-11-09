@@ -7,11 +7,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), AdicionarContatoDialog.ContatoListener, AdicionarContatoDialog.ProprietarioListener {
     val tvNomeProprietario : TextView by lazy { findViewById(R.id.tv_nome_proprietario) }
@@ -37,10 +35,19 @@ class MainActivity : AppCompatActivity(), AdicionarContatoDialog.ContatoListener
         }
 
         initializeDatabase()
+        viewModel.pegarInformacoesContatos()
+        initializeObservers()
         setupInfoProprietario()
         setupRecyclerView()
         setupFab()
-        carregarInformacoesContatos()
+    }
+
+    private fun initializeObservers() {
+        viewModel.listaContato.observe(this) { contatos ->
+            contatos?.let {
+                adapter.adicionarContatos(contatos)
+            }
+        }
     }
 
     private fun initializeDatabase() {
@@ -73,8 +80,6 @@ class MainActivity : AppCompatActivity(), AdicionarContatoDialog.ContatoListener
             },
             onItemLongClick = {
                 viewModel.deletarContato(it)
-                val listaContatoAtualizada = viewModel.pegarInformacoesContatos()
-                adapter.adicionarContatos(listaContatoAtualizada)
             }
         )
         val layoutManager = LinearLayoutManager(this)
@@ -99,11 +104,6 @@ class MainActivity : AppCompatActivity(), AdicionarContatoDialog.ContatoListener
         dialog.show(supportFragmentManager, "AdicionarContatoDialog")
     }
 
-    private fun carregarInformacoesContatos() {
-        val contatos = viewModel.pegarInformacoesContatos()
-        adapter.adicionarContatos(contatos)
-    }
-
     override fun onContatoAdicionado(id: Int?, nome: String, idade: Int, telefone: String) {
         val contato = Contato(id = id, nome = nome, idade = idade, telefone = telefone)
         if (contato.id == null) {
@@ -112,8 +112,6 @@ class MainActivity : AppCompatActivity(), AdicionarContatoDialog.ContatoListener
             viewModel.atualizarContato(contato)
 
         }
-        val listaContatoAtualizada = viewModel.pegarInformacoesContatos()
-        adapter.adicionarContatos(listaContatoAtualizada)
     }
 
     override fun onProprietarioAdicionado(id: Int?, nome: String, idade: Int, telefone: String) {
